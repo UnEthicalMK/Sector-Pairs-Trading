@@ -149,3 +149,45 @@ Performance is evaluated on a fully out-of-sample basis using the rolling walk-f
 | **Max Drawdown** | -12.29% |
 | **Trade Win Rate** | 46.61% |
 | **Avg. Holding Days** | 21.6 |
+
+## Limitations & Assumptions
+
+- **Survivorship Bias:** Uses today’s S&P 500 constituents for historical backtests, excluding firms that were delisted or went bankrupt, leading to inflated returns.
+- **Execution Assumptions:** Assumes perfect execution at closing prices with no delay, slippage, market impact, or overnight gap risk.
+- **Static Slippage & Costs:** Applies fixed transaction costs and ignores liquidity-driven slippage and volatility spikes during stressed markets.
+- **Model Risk:** SSD-based pairing captures price similarity, not true cointegration, allowing structurally non-mean-reverting pairs.
+- **Fixed Thresholds:** Uses constant $2\sigma$ entry and $4\sigma$ exit rules, ignoring regime-dependent volatility dynamics.
+- **Capital & Margin Assumptions:** Assumes infinite capital, perfect fractional allocation, and no margin constraints or forced liquidation risk.
+
+## Installation & Execution
+
+### Prerequisites
+Python 3.10+
+
+### 1. Clone Repository
+```bash
+git clone https://github.com/UnEthicalMK/pairs-trading.git
+cd pairs-trading-gatev
+```
+### 2. Virtual Environment
+```bash
+python -m venv .venv
+```
+```bash
+# Windows
+.venv\Scripts\activate
+```
+```bash
+# macOS/Linux
+source .venv/bin/activate
+```
+### 3. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### Run the Pipeline
+
+```bash
+python main.py
+```

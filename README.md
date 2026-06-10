@@ -4,9 +4,9 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![Domain: Quantitative Research](https://img.shields.io/badge/Domain-Statistical_Arbitrage-purple.svg)
 
-## Overview
+## Abstract
 
-This project implements a systematic equity statistical arbitrage strategy based on the classical distance-based pairs trading framework introduced by Gatev, Goetzmann, and Rouwenhorst (2006).
+This implementation replicates the classical distance-based pairs trading framework introduced by Gatev, Goetzmann, and Rouwenhorst (2006), and extends it with modern risk controls and sector constraints.
 
 The objective is to identify historically similar stocks, monitor temporary divergences in their relative price behavior, and exploit subsequent mean reversion through market-neutral long-short positions.
 
@@ -83,7 +83,7 @@ A cooldown period is enforced after exits to prevent excessive trade clustering.
 
 ---
 
-### Walk-Forward Framework
+### Walk-Forward Validation Framework
 
 The strategy is evaluated using a rolling walk-forward framework:
 
@@ -150,6 +150,18 @@ Performance is evaluated on a fully out-of-sample basis using the rolling walk-f
 | **Trade Win Rate** | 46.61% |
 | **Avg. Holding Days** | 21.6 |
 
+### Drivers of Negative Returns
+
+Despite generating a meaningful sample of trades (N = 251) under strict market neutrality (volatility: 3.65%), the strategy produces a negative CAGR (-1.71%), consistent with applying the vanilla Gatev (2006) framework in modern markets.
+
+- **Alpha Decay:** The original dataset reflects a less efficient market regime; today, distance-based signals are largely arbitraged away by institutional and HFT strategies.
+
+- **Trading Frictions:** Pairs trading requires four executions per cycle, so even small transaction costs compound and significantly erode returns.
+
+- **Pseudo-Cointegration:** SSD captures geometric similarity, not true cointegration, leading to structural divergence and stop-loss triggers out-of-sample.
+
+
+
 ## Limitations & Assumptions
 
 - **Survivorship Bias:** Uses today’s S&P 500 constituents for historical backtests, excluding firms that were delisted or went bankrupt, leading to inflated returns.
@@ -159,7 +171,7 @@ Performance is evaluated on a fully out-of-sample basis using the rolling walk-f
 - **Fixed Thresholds:** Uses constant $2\sigma$ entry and $4\sigma$ exit rules, ignoring regime-dependent volatility dynamics.
 - **Capital & Margin Assumptions:** Assumes infinite capital, perfect fractional allocation, and no margin constraints or forced liquidation risk.
 
-## Installation & Execution
+## Installation & Pipeline Execution
 
 ### Prerequisites
 Python 3.10+
@@ -167,7 +179,7 @@ Python 3.10+
 ### Clone Repository
 ```bash
 git clone https://github.com/UnEthicalMK/sector-pairs-trading.git
-cd pairs-trading-gatev
+cd sector-pairs-trading
 ```
 ### Virtual Environment
 ```bash

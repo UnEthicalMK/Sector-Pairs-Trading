@@ -1,51 +1,151 @@
-# Statistical Arbitrage: Sector-Neutral Pairs Trading Engine
+# Statistical Arbitrage: Sector-Constrained Pairs Trading using the Gatev Distance Framework
 
 ![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
-![Type: Backtesting Engine](https://img.shields.io/badge/Domain-Quantitative_Research-purple.svg)
+![Domain: Quantitative Research](https://img.shields.io/badge/Domain-Statistical_Arbitrage-purple.svg)
 
 ## Overview
-This repository implements a robust, event-driven backtesting engine for equity statistical arbitrage. The core logic replicates the foundational **Distance Method** for pairs trading proposed by Gatev et al. (2006), enhanced with modern risk-management constraints including dynamic sector-neutral pairing, continuous price path normalization, and explicit transaction friction modeling.
 
-The primary objective of this project is to demonstrate rigorous quantitative engineering pipelines, specifically focusing on the elimination of lookahead bias, the management of survivorship bias, and the construction of scalable, vectorized state machines for trade execution.
+This project implements a systematic equity statistical arbitrage strategy based on the classical distance-based pairs trading framework introduced by Gatev, Goetzmann, and Rouwenhorst (2006).
 
-## System Architecture & Engineering
+The objective is to identify historically similar stocks, monitor temporary divergences in their relative price behavior, and exploit subsequent mean reversion through market-neutral long-short positions.
 
-The engine is highly modular, separating data ingestion, statistical selection, and portfolio execution into distinct domains:
+To improve robustness in modern market environments, the baseline Gatev methodology is extended with:
 
-* **`data_loader.py`**: Handles ingestion and strict temporal slicing to prevent in-sample/out-of-sample data bleeding.
-* **`sector_map.py`**: A localized caching engine that dynamically buckets the S&P 500 universe by GICS sectors to enforce industry-neutral pair selection.
-* **`rolling_windows.py`**: Implements a strict walk-forward methodology (252-day formation, 126-day trading) capturing metadata for seamless downstream performance auditing.
-* **`pair_selection.py`**: Optimizes the $O(N^2)$ computational bottleneck of global pair combinations by utilizing pre-sorted sector clusters, utilizing Sum of Squared Differences (SSD) as the primary distance metric.
-* **`signal_generation.py`**: A high-speed, vectorized state machine governing entry thresholds, mean-reversion exits, standard-deviation stop-losses, and maximum-holding timeouts.
-* **`portfolio.py` & `trade_log.py`**: Explicitly models capital allocation across short/long legs, time-shifts signals to eliminate execution lookahead bias, and deducts basis-point friction per execution.
+- Sector-constrained pair selection
+- Rolling formation and trading windows
+- Transaction cost modeling
+- Stop-loss controls
+- Maximum holding period constraints
+- Cooldown periods to mitigate excessive re-entry
 
-## Methodology Enhancements (Beyond Gatev '06)
+The project emphasizes backtesting integrity through strict chronological train-test separation, walk-forward validation, and elimination of lookahead bias.
 
-While the baseline logic relies on Euclidean distance, this engine implements several critical upgrades necessary for modern market environments:
+---
 
-1. **Intra-Sector Constraints:** By strictly pairing assets within identical GICS sectors, the engine mathematically insulates the portfolio from macroeconomic regime shifts and spurious correlations (e.g., matching a bank with an energy firm during a global market crash).
-2. **Execution Friction:** Every opened and closed pair deducts a strict 6 bps (0.06%) friction penalty to account for exchange commissions and estimated liquidity slippage.
-3. **Continuous Normalization:** Replaces hard-anchoring with localized `base_price` division, ensuring that overnight gaps and earnings jumps are preserved rather than falsely smoothed.
+## Research Methodology
 
-*Note on Survivorship Bias: Due to the constraints of free-tier financial APIs, universe selection utilizes the current S&P 500 constituency. In a true production environment, this module would be swapped for CRSP/Compustat Point-in-Time data to eliminate survivorship bias.*
+### Formation Period
 
-## Repository Structure
+Pairs are selected using a 12-month formation window.
 
-```text
-pairs-trading-engine/
-├── data/                       # Cached JSON universe & output CSV logs
-├── src/                        # Core execution modules
-│   ├── __init__.py
-│   ├── data_loader.py          # yfinance ingestion & cleaning
-│   ├── performance.py          # Sharpe, Max DD, CAGR calculators
-│   ├── pair_selection.py       # Sector-constrained SSD calculation
-│   ├── portfolio.py            # Leverage, friction, and PnL aggregation
-│   ├── preprocessing.py        # Price path normalization
-│   ├── rolling_windows.py      # Walk-forward generator
-│   ├── sector_map.py           # Cached Wikipedia GICS scraper
-│   ├── signal_generation.py    # Core trade state machine
-│   └── trade_log.py            # Geometric compounding extractor
-├── main.py                     # Primary orchestration script
-├── requirements.txt            
-└── README.md
+For each stock:
+
+1. Daily adjusted closing prices are collected.
+2. Price series are normalized to a common starting value.
+3. Sum of Squared Deviations (SSD) is computed between all eligible stock pairs.
+
+Pair similarity is measured using:
+
+$$
+SSD = \sum_{t=1}^{T}(P_{1,t} - P_{2,t})^2
+$$
+
+where $P_1$ and $P_2$ represent normalized price paths.
+
+Only stocks belonging to the same GICS sector are eligible for pairing, reducing exposure to spurious correlations driven by macroeconomic events.
+
+The top-ranked pairs with the lowest SSD values are selected for trading.
+
+---
+
+### Trading Period
+
+Selected pairs are traded during the subsequent 6-month trading window.
+
+For each pair:
+
+- Historical spread mean and volatility are estimated from the formation period.
+- Entry signals are generated when spreads deviate by more than two standard deviations from their historical mean.
+- Positions are closed when the spread converges toward its historical equilibrium.
+
+#### Trading Rules
+
+**Long Spread**
+
+$$
+Spread < Mean - 2\sigma
+$$
+
+**Short Spread**
+
+$$
+Spread > Mean + 2\sigma
+$$
+
+#### Exit Conditions
+
+- Mean reversion
+- 4σ stop-loss
+- Maximum holding period of 30 trading days
+
+A cooldown period is enforced after exits to prevent excessive trade clustering.
+
+---
+
+### Walk-Forward Framework
+
+The strategy is evaluated using a rolling walk-forward framework:
+
+- Formation Window: 252 trading days
+- Trading Window: 126 trading days
+
+At the end of each trading period:
+
+- Existing pairs are discarded.
+- New pairs are selected using the latest formation data.
+
+This process allows the strategy to adapt to changing market conditions and mitigates pair decay over time.
+
+---
+
+## Quantitative Engineering Considerations
+
+The implementation incorporates several safeguards commonly used in professional systematic trading research.
+
+### Lookahead Bias Prevention
+
+Signals are generated using only information available at the decision timestamp. Trades are executed on the following trading day, ensuring realistic signal execution.
+
+### Sector Neutrality
+
+Pair selection is restricted to stocks within identical GICS sectors. 
+
+Examples of valid pairs evaluated:
+
+- **META – GOOGL** (Communication Services)
+- **MSFT – AAPL** (Information Technology)
+- **CVX – XOM** (Energy)
+
+This reduces exposure to regime-dependent cross-sector correlations.
+
+### Transaction Cost Modeling
+
+Each completed trade includes explicit transaction costs (6 basis points) to account for commissions and execution slippage across both legs.
+
+### Risk Controls
+
+The strategy utilizes standard deviation stop-losses, maximum holding periods, rolling pair re-selection, and trade cooldown mechanisms to prevent capital from becoming trapped in structurally broken relationships.
+
+---
+
+## Performance Evaluation
+
+Performance is evaluated on a fully out-of-sample basis using the rolling walk-forward framework. 
+
+### Equity Curve
+
+![Equity Curve](plots/equity_curve.png)
+
+### Performance Summary
+
+| Metric | Value |
+| :--- | :--- |
+| **Total Trades** | 251 |
+| **Total Return** | -8.24% |
+| **Annualized Return** | -1.71% |
+| **Annualized Volatility** | 3.65% |
+| **Sharpe Ratio** | -0.45 |
+| **Max Drawdown** | -12.29% |
+| **Trade Win Rate** | 46.61% |
+| **Avg. Holding Days** | 21.6 |

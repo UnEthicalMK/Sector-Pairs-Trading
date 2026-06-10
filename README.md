@@ -164,12 +164,12 @@ Performance is evaluated on a fully out-of-sample basis using the rolling walk-f
 ### Prerequisites
 Python 3.10+
 
-### 1. Clone Repository
+### Clone Repository
 ```bash
 git clone https://github.com/UnEthicalMK/pairs-trading.git
 cd pairs-trading-gatev
 ```
-### 2. Virtual Environment
+### Virtual Environment
 ```bash
 python -m venv .venv
 ```
@@ -181,7 +181,7 @@ python -m venv .venv
 # macOS/Linux
 source .venv/bin/activate
 ```
-### 3. Install Dependencies
+### Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
@@ -191,3 +191,10 @@ pip install -r requirements.txt
 ```bash
 python main.py
 ```
+
+## Reference
+
+Gatev, E., Goetzmann, W. N., & Rouwenhorst, K. G. (2006).  
+*Pairs Trading: Performance of a Relative-Value Arbitrage Rule.*  
+Review of Financial Studies, 19(3), 797–827.  
+https://doi.org/10.1093/rfs/hhj020

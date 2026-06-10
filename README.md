@@ -166,7 +166,7 @@ Python 3.10+
 
 ### Clone Repository
 ```bash
-git clone https://github.com/UnEthicalMK/pairs-trading.git
+git clone https://github.com/UnEthicalMK/sector-pairs-trading.git
 cd pairs-trading-gatev
 ```
 ### Virtual Environment
